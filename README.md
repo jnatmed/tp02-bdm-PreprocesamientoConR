@@ -50,7 +50,7 @@
 ## 7. Normalización. Trabaje sobre las siguientes consignas:
 
 - a. A partir del dataset encuesta_universitaria.csv, opere sobre el atributo tiempo_traslado de la siguiente manera:
-+ i. Normalice el atributo utilizando la técnica de mínimo-máximo.
-+ ii. Ahora, normalice el atributo mediante la técnica de z-score propuesta en el libro “Data Mining. Concepts & Techniques de Jiawei Han & otros”.
-+ iii. Por último, utilice la técnica de escalado decimal para llevar adelante la tarea de normalización.
+    + i. Normalice el atributo utilizando la técnica de mínimo-máximo.
+    + ii. Ahora, normalice el atributo mediante la técnica de z-score propuesta en el libro “Data Mining. Concepts & Techniques de Jiawei Han & otros”.
+    + iii. Por último, utilice la técnica de escalado decimal para llevar adelante la tarea de normalización.
 - b. Analice los resultados encontrados. Compare los mismos realizando gráficos sobre los atributos resultantes en cada caso.
