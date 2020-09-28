@@ -1,4 +1,6 @@
-## TRABAJO PRÁCTICO 02: Preprocesamiento de datos -Análisis, Limpieza, Transformación e Integración- Alumno : Juan Natello
+#<div style="text-align: center">
+## TRABAJO PRÁCTICO 02: Preprocesamiento de datos -Análisis, Limpieza, Transformación e Integración- Alumno : Juan Natello 
+#<div/>
 
 ## Limpieza de datos:
 
