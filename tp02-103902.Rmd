@@ -19,11 +19,11 @@ library(gplots)
 library(RColorBrewer)
 library(caret)
 
-auto_mpg_data_original <- read_table2("~/UNLu/BasedeDatosMasivas/Trabajos Practicos/tp02-bdm-Preprocesamiento con R/data/auto-mpg.data-original.txt",
+auto_mpg_data_original <- read_table2("~/UNLu/BasedeDatosMasivas/Trabajos Practicos/tp02-bdm-PreprocesamientoConR/data/auto-mpg.data-original.txt",
     col_names = c("x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11"))
 
 
-encuesta_universitaria <- read_csv("~/UNLu/BasedeDatosMasivas/Trabajos Practicos/tp02-bdm-Preprocesamiento con R/data/encuesta_universitaria.csv")
+encuesta_universitaria <- read_csv("~/UNLu/BasedeDatosMasivas/Trabajos Practicos/tp02-bdm-PreprocesamientoConR/data/encuesta_universitaria.csv")
 
 ```
 
@@ -367,9 +367,17 @@ barplot(table(bin_global_equal_frec2))
 
 
 ````{r echo=FALSE}
-    mmnorm(tiempo_traslado, minval = 0, maxval = 1)
 
-
+    norm_minmax = function(x){
+      minimo = min(unlist(x))
+      rango = max(unlist(x)) - minimo
+      for (i in 1:length(x)){
+        x[i] <- (x[i] - minimo) / rango
+      }      
+      return(x)
+    }
+    normalizacion_minmax <- norm_minmax(tiempo_traslado)
+    summary(normalizacion_minmax)
 ```
 
   - ii. Ahora, normalice el atributo mediante la técnica de z-score propuesta en el libro “Data Mining. Concepts & Techniques de Jiawei Han & otros”.
@@ -378,8 +386,6 @@ barplot(table(bin_global_equal_frec2))
 valores.zscore <- (tiempo_traslado - mean(tiempo_traslado))/sd(tiempo_traslado)
 head(valores.zscore, n=5)
 ```
-
-
 
   - iii. Por último, utilice la técnica de escalado decimal para llevar adelante la tarea de normalización.
 
