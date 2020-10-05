@@ -1,0 +1,396 @@
+---
+title: "TRABAJO PRÁCTICO 02: Preprocesamiento de datos -Análisis, Limpieza, Transformación e Integración-"
+author: "juan-natello"
+date: "8/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(modeest)   
+library(readr)
+library(MASS)
+library(scatterplot3d)
+library(car)
+library(VIM)
+library(infotheo)
+library(gplots)
+library(RColorBrewer)
+library(caret)
+
+auto_mpg_data_original <- read_table2("~/UNLu/BasedeDatosMasivas/Trabajos Practicos/tp02-bdm-Preprocesamiento con R/data/auto-mpg.data-original.txt",
+    col_names = c("x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11"))
+
+
+encuesta_universitaria <- read_csv("~/UNLu/BasedeDatosMasivas/Trabajos Practicos/tp02-bdm-Preprocesamiento con R/data/encuesta_universitaria.csv")
+
+```
+
+#### Limpieza de datos: Datos Faltantes
+* 1. Datos Faltantes: Se cuenta con el dataset encuesta_universitaria.csv, el cual posee valores faltantes para la variable tiempo_traslado. Aplique los siguientes métodos a efectos de reemplazar esos valores:
+  - a. Verifique cual es la proporción de valores faltantes respecto a la cantidad total de instancias del dataset.  
+RESPUESTA: Para este problema,usamos la funcion sum(is.na(encuesta_universitaria$'Tiempo_Traslado')) para ver la cantidad total de faltantes. 
+
+
+```{r echo=FALSE}
+
+```
+
+```{r echo=FALSE}
+# Cantidad de Datos Faltantes
+cantidad_faltante_tiempo_traslado <- sum(is.na(encuesta_universitaria$"Tiempo_Traslado"))
+print(paste("Cantidad de Faltantes Tiempo Traslado: ",cantidad_faltante_tiempo_traslado))
+# Tamaño del DataSet
+cant_columnas_dataset <- dim(encuesta_universitaria)[1]
+cant_filas_dataset <- dim(encuesta_universitaria)[2]
+cantidad_total_instancias_dataset <- cant_columnas_dataset * cant_filas_dataset
+print(paste("Dimensiones DataSet: ", cantidad_total_instancias_dataset, " datos"))
+proporcion_valores_faltantes <- (cantidad_faltante_tiempo_traslado * 100)/ cantidad_total_instancias_dataset
+print(paste("PROPORCION DE FALTANTES: ", proporcion_valores_faltantes,"%"))
+```
+Esto nos dice que hay 5891 filas (sin incluir las cabeceras) por 33 columnas, esto es igual a 194403 datos de los cuales, 863 datos son faltantes, en cuestiones de proporcion, estos representan aproximadamente el 0.44 %.
+
+  - b. Genere un nuevo atributo utilizando solo los registros con valores observados para el atributo. 
+
+```{r }
+  naOmit_tiempo_tralado <- na.omit(encuesta_universitaria$Tiempo_Traslado)
+  str(naOmit_tiempo_tralado)
+```
+  - c. Genere un nuevo atributo en el que sustituya los valores faltantes por la media encontrada para el atributo 
+
+```{r}
+tiempo_traslado <- encuesta_universitaria$Tiempo_Traslado
+tiempo_traslado[is.na(tiempo_traslado)]=mean(tiempo_traslado, na.rm = TRUE)
+str(tiempo_traslado)
+tiempo_traslado.mean = tiempo_traslado
+```
+  - d. Genere un nuevo atributo en el que sustituya los valores faltantes de acuerdo al método de “hot deck imputation".
+  
+```{r}
+ df_aux <- hotdeck(encuesta_universitaria, variable = "Tiempo_Traslado")
+ tiempo_traslado.hotdeck <- df_aux$Tiempo_Traslado
+ sum(is.na(tiempo_traslado.hotdeck))
+```
+  - e. Analice los resultados encontrados a partir de la aplicación de los métodos anteriores. Compare los mismos realizando gráficos sobre los valores resultantes en cada caso.
+
+```{r echo=FALSE}  
+plot(density(encuesta_universitaria$Tiempo_Traslado, na.rm = TRUE), type = "l", col="red", ylab="Original", xlim=c(0,150), ylim=c(0,.025))
+lines(density(tiempo_traslado.mean, na.rm = TRUE), type = "l", col="blue")
+lines(density(tiempo_traslado.hotdeck, na.rm = TRUE), type = "l", col="green")
+legend(1,.025,legend=c("Original","Media","Hotdeck"),col=c("red","blue",'green','yellow',"black"),lty=1,cex=.8)
+```  
+
+
+  - Como se puede observar la imputacion por media es la que mas se diferencia de la distribucion original de los datos, debido a que se esta llenado los valores faltantes con el valor de la media, entonces lo que hace es aumentar el valor donde tengo ubicada la media y me estira la proporcion alrededor de la misma. En cambio la distribucion sobre Hotdeck es la que mas respeta la distribucion normal de la variable. 
+  
+
+#### Limpieza de datos: Manejo de Ruido
+* 2.Para el dataset anterior, avance sobre las siguientes operaciones para los atributos numéricos (cuantitativos continuos):
+
+Las variables con atributos numericos son:
+
+  + Carrera
+  + Sede
+  + Tiempo Traslado
+  + Cantidad Grupo Familiar
+
+  - a. Verifique en primer lugar la distribución de los datos, utilice algún método gráfico para esto.
+  
+```{r echo=FALSE}
+  carrera <- encuesta_universitaria$Carrera
+  sede <- encuesta_universitaria$Sede
+  cantidad_grupo_familiar <- encuesta_universitaria$Cantidad_Grupo_Familiar
+
+hist(cantidad_grupo_familiar, main = "Histograma de la Cantidad de Grupo Familiar", xlab = "Cantidad de Miembros", ylab = "Frecuencia", xlim=c(0,20), ylim=c(0,5000))
+hist(carrera, main = "Histograma de la Carrera", xlab = "Numero de Carrera", ylab = "Frecuencia", xlim=c(0,60))
+hist(sede, main = "Histograma de la Sede", xlab = "Numero de Sede", ylab = "Frecuencia", xlim=c(0,15), ylim=c(0,5000))
+hist(tiempo_traslado, main = "Histograma del Tiempo de Traslado", xlab = "Tiempo de Traslado", ylab = "Frecuencia",xlim=c(1,500), ylim=c(0,6000))
+
+```
+
+
+  Observando la distribucion de los datos: 
+* Cantidad de Grupo familiar: se puede observar el mayor porcentaje va entre 0 y 5 miembros.
+* Carrera: se puede decir que el numero de carrera mas elegida esta entre la numero 0 y 5. 
+* Sede: La sede 1 es la mas elegida. 
+* Tiempo de Traslado: La mayor parte tarda entre 0 y 200. 
+  
+  - b. Realice un suavizado utilizando binning por frecuencias iguales (con 5 bins) y estime el valor del bin por el cálculo de medias.
+  
+```{r echo=FALSE}
+
+bin_equal_frec <- discretize(tiempo_traslado, "equalfreq",5)
+bin_equal_frec$tiempo_traslado = tiempo_traslado
+
+for(bin in 1:5){
+  bin_equal_frec$suavizado[ bin_equal_frec$X == bin ] = mean(bin_equal_frec$tiempo_traslado[ bin_equal_frec$X == bin ])
+  
+plot(sort(tiempo_traslado, decreasing = FALSE), type = "l", col="red", ylab="Tiempo de Traslado", ylim=c(0,500))
+lines(sort(bin_equal_frec$suavizado), type="l", col="blue")
+  
+}
+
+
+```
+  
+  
+  - c. Ahora, realice el suavizado por anchos iguales (con 5 bins) y compare los resultados gráficamente.
+  
+  
+```{r echo=FALSE}
+
+bin_equal_frec <- discretize(tiempo_traslado, "equalwidth",5)
+bin_equal_frec$tiempo_traslado = tiempo_traslado
+
+for(bin in 1:5){
+  bin_equal_frec$suavizado[ bin_equal_frec$X == bin ] = mean(bin_equal_frec$tiempo_traslado[ bin_equal_frec$X == bin ])
+  
+plot(sort(tiempo_traslado, decreasing = FALSE), type = "l", col="red", ylab="Tiempo de Traslado", ylim=c(0,500))
+lines(sort(bin_equal_frec$suavizado), type="l", col="blue")
+  
+}
+
+
+```
+
+
+Se puede observar que el suevizado por igual frecuencia respeta mas la distribucion de los datos originales. 
+
+#### Limpieza de datos: Deteccion de Ruido. Ahora, trabaje sobre el mismo atributo del dataset original con las siguientes consignas:
+
+  - a. Verifique la existencia de outliers en el atributo tiempo_traslado en función del resto de los atributos. ¿En todos los casos se trata de un valor anómalo? 
+
+```{r echo=FALSE}
+  plot(sort(tiempo_traslado, decreasing=FALSE))
+  print(paste("MEDIA: ",mean(tiempo_traslado)))
+  print(paste("MINIMO: ",min(tiempo_traslado)))
+  print(paste("MAXIMO: ",max(tiempo_traslado)))
+  
+
+```
+  
+  
+  Se puede observar la existencia de un valor anomalo. 
+  
+  si calculamos la media, el minimo y el maximo se puede deducir que el valor atipico corre la media de lugar. Observando el valor MAXIMO atipico al resto, se puede suponer que los  3600 estan en segundos, queriendo decir que en realizar el valor es una hora de traslado. donde el resto de los valores podria estar siendo expresado en minutos "48" o en horas en el caso del minimo valor "1"
+  
+  - b. Aplique las técnicas de análisis y detección vistas en clase: IRQ, SD (seleccione el N que mejor se adapte a su criterio) y Z-Score (seleccione el umbral que mejor se adapte a su criterio).
+  
+````{r echo=FALSE}
+  print(paste("IRQ: ",IQR(tiempo_traslado)))
+  cuantiles <- quantile(tiempo_traslado, c(.25,.5,.75),type=7)
+  print(cuantiles)
+```
+Se puede observar que el tiempo de traslado varia entre media hora y 1 hora, y que el valor del atributo esta expresado en su mayor parte en minutos. 
+
+````{r echo=FALSE}
+N = 2
+data <- tiempo_traslado
+desvio <- sd(data)
+print(paste("MEDIA:",mean(data)))
+print(paste("DESVIO: ",desvio))
+outliers_max <- mean(data) + N * desvio
+print(paste("OUTLIERS_MAX: ",outliers_max))
+outliers_min <- mean(data) - N * desvio
+print(paste("OUTLIERS_MIN: ",outliers_min))
+```
+
+````{r echo=FALSE}
+
+plot(sort(data[data>outliers_min & data < outliers_max], decreasing = FALSE))
+
+```
+
+Un N = 2 parace dar con valores intuitivamente con sentido.En la grafica se puede observar de mejor manera estos valores.  
+
+
+````{r echo=FALSE}
+
+data$zscore <- (tiempo_traslado - mean(tiempo_traslado))/sd(tiempo_traslado)
+umbral <- 2
+data$zscore
+```
+```{r echo=FALSE}
+hist(data$zscore, xlim=c(-10,10))
+
+```
+
+
+  - c. Concluya respecto a los resultados obtenidos con cada técnica.
+
+#### Reducción de dimensionalidad: A partir del dataset auto-mpg.data-original.txt1, se solicita trabajar sobre las siguientes consignas:
+
+  - a. Evalúe la relación entre atributos a partir del coeficiente de correlación de Pearson y un análisis gráfico de heatmap2 para estudiar la posibilidad de eliminar redundancia en el dataset. En caso de corresponder, aplique las técnicas de Reducing Highly Correlated Columns trabajadas en clase.
+
+````{r echo=FALSE}
+
+data.numeric <- na.omit(auto_mpg_data_original[,-c(9:11)])
+
+# Calculo matriz de correlacion
+matriz.correlacion <- cor(data.numeric)
+
+# Verifico la Correlacion con la matriz
+print(matriz.correlacion)
+```
+
+
+````{r echo=FALSE}
+
+dev.set(dev.next())
+dev.off()
+ds.cor=cor(auto_mpg_data_original[,-c(9:11)],use="complete.obs")
+
+heatmap.2(ds.cor,
+          cellnote = round(ds.cor,1),
+          notecol="black",
+          density.info = "none",
+          trace = "none",
+          margins = c(6,12),
+          col = brewer.pal('RdYlBu',n=7),
+          dendrogram="none",
+          Colv = "NA")
+  
+```
+Se puede observar que hay una fuerte correlacion entre las variables (x2,x3,x4,x5), luego en menor medida le siguen (x1,x8,x7)
+
+Vamos a pasar a eliminar la redundancia en el dataset, sacando aquellas variables con un coeficiente mayor o igual a 0.8
+
+````{r echo=FALSE}
+  highCorrelated <- findCorrelation(matriz.correlacion, cutoff=0.80)
+  print(names(data.numeric[,highCorrelated]))
+```
+
+  - b. Verifique a través del Test de Chi-Cuadrado si existe dependencia entre pares de
+atributos discretos. Determine en qué casos es conveniente reducir
+dimensionalidad.
+
+
+````{r echo=FALSE}
+
+chisq.test(highCorrelated)
+
+```
+  
+
+#### Análisis de Componentes Principales. Cargue en R el dataset europa.dat y conteste las siguientes consignas a través de las funcionalidades provistas por esa herramienta:
+
+  - a. Calcule la matriz de covarianzas. ¿Qué nos indica la misma sobre los atributos del dataset?
+
+````{r echo=FALSE}
+auto_mpg_sinclase <- na.omit(auto_mpg_data_original[,-c(9:11)])
+cov(auto_mpg_sinclase)
+
+```
+Esta matriz nos indica que por ejemplo: aquellos valores con coeficiente positivo hacen que ambas variables aumenten o disminuyan a la vez, mientras que un coeficiente negativo provoca que una variable tienda a incrementarse mientras la otra disminuye. 
+
+  - b. Realice ahora el análisis de componentes principales. ¿Cuánto explica de la variación total del dataset la primera componente? ¿Y si se incorpora la segunda? ¿Y el primer auto-valor?
+
+
+````{r echo=FALSE}
+
+auto_mpg_escalado <- data.frame(scale(auto_mpg_sinclase))
+
+#Corro analisis en CP
+pca.auto_mpg <- princomp(auto_mpg_escalado, cor = F)
+print(pca.auto_mpg)
+
+```
+
+
+````{r echo=FALSE}
+summary(pca.auto_mpg)
+
+```
+
+  - c. Grafique el perfil de variación de las componentes en un gráfico de dispersión donde las X es la componente y la Y la varianza.
+
+
+````{r echo=FALSE}
+plot(pca.auto_mpg, type="l")
+
+```
+
+
+  - d. Analice la matriz de loading. ¿Qué información provee? ¿Qué variables están más correlacionadas con la primera componente?
+
+
+````{r echo=FALSE}
+loadings(pca.auto_mpg)
+
+```
+  
+  
+  - e. Genere un gráfico de biplot y explique brevemente que información le provee el mismo.
+
+
+````{r echo=FALSE}
+par(mfrow=c(1,2))
+biplot(pca.auto_mpg)
+biplot(pca.auto_mpg, choice=c(3,1))
+
+```
+
+  - f. En función de los análisis realizados en los puntos anteriores. ¿Cuántas componentes principales elegiría para explicar el comportamiento del dataset? Justifique esa cantidad.
+
+
+#### Transformación de datos: 6. Discretización. A partir del dataset encuesta_universitaria.csv, opere sobre el atributo tiempo_traslado de la siguiente manera:
+
+  - a. Transforme el atributo a discreto, definiendo 5 rangos de acuerdo al análisis de frecuencia de los valores encontrados para el atributo.
+
+````{r echo=FALSE}
+bin_equal_frec2 <- discretize(tiempo_traslado, "equalfreq", 5)
+barplot(table(bin_equal_frec2))
+```
+
+  - b. Transforme el atributo a discreto, definiendo 5 rangos de acuerdo al método de anchos iguales.
+
+
+````{r echo=FALSE}
+bin_equal_width <- discretize(tiempo_traslado, "equalwidth", 5)
+barplot(table(bin_equal_width))
+```
+
+  - c. Transforme el atributo a discreto, definiendo usted, según su criterio, 5 rangos distintos con sus respectivas etiquetas.
+
+````{r echo=FALSE}
+bin_global_equal_frec2 <- discretize(tiempo_traslado, "globalequalwidth", 5)
+barplot(table(bin_global_equal_frec2))
+```
+
+  - d. Analice los resultados encontrados. Compare los mismos realizando gráficos de frecuencia sobre los intervalos resultantes en cada caso. ¿Qué conclusiones se pueden obtener en términos del balanceo de las mismas de acuerdo a la técnica utilizada?
+
+
+##### 7. Normalización. Trabaje sobre las siguientes consignas:a. A partir del dataset encuesta_universitaria.csv, opere sobre el atributo tiempo_traslado de la siguiente manera:
+
+  - i. Normalice el atributo utilizando la técnica de minimo-maximo.
+
+
+````{r echo=FALSE}
+    mmnorm(tiempo_traslado, minval = 0, maxval = 1)
+
+
+```
+
+  - ii. Ahora, normalice el atributo mediante la técnica de z-score propuesta en el libro “Data Mining. Concepts & Techniques de Jiawei Han & otros”.
+
+````{r echo=FALSE}
+valores.zscore <- (tiempo_traslado - mean(tiempo_traslado))/sd(tiempo_traslado)
+head(valores.zscore, n=5)
+```
+
+
+
+  - iii. Por último, utilice la técnica de escalado decimal para llevar adelante la tarea de normalización.
+
+
+````{r echo=FALSE}
+valores.escalados <- scale(tiempo_traslado)
+
+head(tiempo_traslado, n= 5)
+head(valores.escalados, n= 5)
+
+
+```
+
+
